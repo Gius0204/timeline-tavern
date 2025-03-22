@@ -35,40 +35,43 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Initialize Query Client outside of component
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ProjectProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route 
-              path="/dashboard" 
-              element={
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/projects/:projectId" 
-              element={
-                <DashboardLayout>
-                  <ProjectDetails />
-                </DashboardLayout>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ProjectProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ProjectProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                } 
+              />
+              <Route 
+                path="/projects/:projectId" 
+                element={
+                  <DashboardLayout>
+                    <ProjectDetails />
+                  </DashboardLayout>
+                } 
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ProjectProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

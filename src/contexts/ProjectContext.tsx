@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useMemo, useCallback } from "react";
 import { Project, Task, Section, Status, User, StatusColumn, Group, TimeEntry } from "@/types";
 
