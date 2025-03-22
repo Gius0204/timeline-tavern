@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Task, User, SubTask } from "@/types";
 import { useProject } from "@/contexts/ProjectContext";
 import { 
@@ -45,8 +45,10 @@ import {
   MessageSquare,
   Archive,
   Trash2,
-  Share2
+  Share2,
+  X
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 interface TaskModalProps {
   task: Task | null;
@@ -60,14 +62,26 @@ const TaskModal: React.FC<TaskModalProps> = ({
   onOpenChange 
 }) => {
   const { users, updateTask, deleteTask } = useProject();
-  const [editedTask, setEditedTask] = useState<Task | null>(task);
+  const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [newSubTaskTitle, setNewSubTaskTitle] = useState("");
+  
+  // Set editedTask whenever task changes
+  useEffect(() => {
+    if (task) {
+      setEditedTask({...task});
+    }
+  }, [task]);
   
   if (!task || !editedTask) return null;
   
   const handleUpdate = () => {
     if (editedTask) {
       updateTask(editedTask);
+      toast({
+        title: "Task updated",
+        description: "Your changes have been saved successfully",
+      });
       onOpenChange(false);
     }
   };
@@ -75,6 +89,11 @@ const TaskModal: React.FC<TaskModalProps> = ({
   const handleDelete = () => {
     if (editedTask) {
       deleteTask(editedTask.id);
+      toast({
+        title: "Task deleted",
+        description: "The task has been removed successfully",
+        variant: "destructive"
+      });
       onOpenChange(false);
     }
   };
@@ -130,14 +149,22 @@ const TaskModal: React.FC<TaskModalProps> = ({
     }
   };
   
-  const addSubTask = (title: string) => {
-    if (editedTask) {
+  const addSubTask = () => {
+    if (editedTask && newSubTaskTitle.trim() !== "") {
       const newSubTask: SubTask = {
         id: `subtask${Date.now()}`,
-        title,
+        title: newSubTaskTitle,
         completed: false,
       };
       updateField('subTasks', [...(editedTask.subTasks || []), newSubTask]);
+      setNewSubTaskTitle("");
+    }
+  };
+  
+  const removeSubTask = (subTaskId: string) => {
+    if (editedTask && editedTask.subTasks) {
+      const updatedSubTasks = editedTask.subTasks.filter(st => st.id !== subTaskId);
+      updateField('subTasks', updatedSubTasks);
     }
   };
   
@@ -215,24 +242,39 @@ const TaskModal: React.FC<TaskModalProps> = ({
                       className="h-4 w-4"
                     />
                     <span className={cn(
+                      "flex-grow",
                       subTask.completed && "line-through text-muted-foreground"
                     )}>
                       {subTask.title}
                     </span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeSubTask(subTask.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
                   </div>
                 ))}
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="gap-1 text-muted-foreground"
-                    onClick={() => {
-                      const title = prompt('Enter subaction title');
-                      if (title) addSubTask(title);
+                  <Input
+                    value={newSubTaskTitle}
+                    onChange={(e) => setNewSubTaskTitle(e.target.value)}
+                    placeholder="New subaction"
+                    className="flex-grow"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addSubTask();
+                      }
                     }}
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={addSubTask}
                   >
                     <Plus className="h-4 w-4" />
-                    <span>New subaction</span>
                   </Button>
                 </div>
               </div>
@@ -372,7 +414,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {editedTask.startDate && editedTask.dueDate ? (
                           <span>
-                            {format(editedTask.startDate, "MMM d")} - {format(editedTask.dueDate, "MMM d")}
+                            {format(new Date(editedTask.startDate), "MMM d")} - {format(new Date(editedTask.dueDate), "MMM d")}
                           </span>
                         ) : (
                           <span>Select date range</span>
@@ -387,7 +429,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                             <div className="pt-1 pb-2">
                               <Calendar
                                 mode="single"
-                                selected={editedTask.startDate}
+                                selected={editedTask.startDate ? new Date(editedTask.startDate) : undefined}
                                 onSelect={(date) => handleDateChange(date, 'startDate')}
                                 className="p-0 rounded-md border shadow-sm"
                               />
@@ -398,7 +440,7 @@ const TaskModal: React.FC<TaskModalProps> = ({
                             <div className="pt-1 pb-2">
                               <Calendar
                                 mode="single"
-                                selected={editedTask.dueDate}
+                                selected={editedTask.dueDate ? new Date(editedTask.dueDate) : undefined}
                                 onSelect={(date) => handleDateChange(date, 'dueDate')}
                                 className="p-0 rounded-md border shadow-sm"
                               />
@@ -435,10 +477,10 @@ const TaskModal: React.FC<TaskModalProps> = ({
                       <div className="flex items-center gap-2">
                         <div className={cn(
                           "w-2 h-2 rounded-full",
-                          editedTask.status === "in-progress" && "bg-hive-purple",
-                          editedTask.status === "completed" && "bg-hive-green",
-                          editedTask.status === "blocked" && "bg-hive-red",
-                          editedTask.status === "unstarted" && "bg-hive-gray",
+                          editedTask.status === "in-progress" && "bg-purple-500",
+                          editedTask.status === "completed" && "bg-green-500",
+                          editedTask.status === "blocked" && "bg-red-500",
+                          editedTask.status === "unstarted" && "bg-gray-400",
                         )} />
                         <span className="capitalize">{editedTask.status}</span>
                       </div>
@@ -448,25 +490,25 @@ const TaskModal: React.FC<TaskModalProps> = ({
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleStatusChange('unstarted')}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-hive-gray" />
+                        <div className="w-2 h-2 rounded-full bg-gray-400" />
                         <span>Unstarted</span>
                       </div>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleStatusChange('in-progress')}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-hive-purple" />
+                        <div className="w-2 h-2 rounded-full bg-purple-500" />
                         <span>In Progress</span>
                       </div>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-hive-green" />
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
                         <span>Completed</span>
                       </div>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleStatusChange('blocked')}>
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-hive-red" />
+                        <div className="w-2 h-2 rounded-full bg-red-500" />
                         <span>Blocked</span>
                       </div>
                     </DropdownMenuItem>
