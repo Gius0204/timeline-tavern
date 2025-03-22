@@ -35,39 +35,56 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Initialize Query Client outside of component
-const queryClient = new QueryClient();
+// Create a function to create a new QueryClient instance
+const createQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
+// Create AppContent component to use router hooks
+const AppContent = () => {
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <DashboardLayout>
+              <Dashboard />
+            </DashboardLayout>
+          } 
+        />
+        <Route 
+          path="/projects/:projectId" 
+          element={
+            <DashboardLayout>
+              <ProjectDetails />
+            </DashboardLayout>
+          } 
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
+// Main App component
 const App = () => {
+  const queryClient = createQueryClient();
+
   return (
     <QueryClientProvider client={queryClient}>
       <ProjectProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
-            <ScrollToTop />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
-                } 
-              />
-              <Route 
-                path="/projects/:projectId" 
-                element={
-                  <DashboardLayout>
-                    <ProjectDetails />
-                  </DashboardLayout>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <AppContent />
         </TooltipProvider>
       </ProjectProvider>
     </QueryClientProvider>
